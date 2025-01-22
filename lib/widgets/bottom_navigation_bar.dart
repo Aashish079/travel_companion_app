@@ -1,12 +1,26 @@
 import 'package:flutter/material.dart';
 
-class CustomBottomNavigation extends StatelessWidget {
+class CustomBottomNavigation extends StatefulWidget {
   const CustomBottomNavigation({super.key});
+
+  @override
+  State<CustomBottomNavigation> createState() => _CustomBottomNavigationState();
+}
+
+class _CustomBottomNavigationState extends State<CustomBottomNavigation> {
+  int _currentIndex = 0;
 
   @override
   Widget build(BuildContext context) {
     return BottomNavigationBar(
       type: BottomNavigationBarType.fixed,
+      currentIndex: _currentIndex,
+      onTap: (index) {
+        setState(() {
+          _currentIndex = index;
+        });
+        // TODO: Navigate or handle logic based on the selected index
+      },
       items: const [
         BottomNavigationBarItem(
           icon: Icon(Icons.home),
@@ -29,7 +43,6 @@ class CustomBottomNavigation extends StatelessWidget {
           label: 'Profile',
         ),
       ],
-      currentIndex: 0,
       selectedItemColor: Colors.brown,
       unselectedItemColor: Colors.grey,
     );
