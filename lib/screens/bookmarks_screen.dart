@@ -5,17 +5,21 @@ class BookmarksScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Bookmarks'),
-        backgroundColor: Colors.brown,
-      ),
-      body: const Center(
-        child: Text(
-          'Bookmarks Screen',
-          style: TextStyle(fontSize: 24),
+    return Column(
+      children: [
+        AppBar(
+          title: const Text('Bookmarks'),
+          backgroundColor: Colors.brown,
         ),
-      ),
+        const Expanded(
+          child: Center(
+            child: Text(
+              'Bookmarks Screen',
+              style: TextStyle(fontSize: 24),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

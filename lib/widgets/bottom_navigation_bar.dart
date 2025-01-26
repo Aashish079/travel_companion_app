@@ -1,26 +1,21 @@
 import 'package:flutter/material.dart';
 
-class CustomBottomNavigation extends StatefulWidget {
-  const CustomBottomNavigation({super.key});
+class CustomBottomNavigation extends StatelessWidget {
+  final int currentIndex;
+  final Function(int) onTap;
 
-  @override
-  State<CustomBottomNavigation> createState() => _CustomBottomNavigationState();
-}
-
-class _CustomBottomNavigationState extends State<CustomBottomNavigation> {
-  int _currentIndex = 0;
+  const CustomBottomNavigation({
+    super.key,
+    required this.currentIndex,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
     return BottomNavigationBar(
       type: BottomNavigationBarType.fixed,
-      currentIndex: _currentIndex,
-      onTap: (index) {
-        setState(() {
-          _currentIndex = index;
-        });
-        // TODO: Navigate or handle logic based on the selected index
-      },
+      currentIndex: currentIndex,
+      onTap: onTap,
       items: const [
         BottomNavigationBarItem(
           icon: Icon(Icons.home),
