@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import '../widgets/location_header.dart';
-import '../widgets/category_section.dart';
-import '../widgets/destination_card.dart';
-import '../widgets/bottom_navigation_bar.dart';
+import 'package:flutter/rendering.dart';
+import 'package:travel_companion_app/widgets/category_section.dart';
+import 'package:travel_companion_app/widgets/destination_card.dart';
+import 'package:travel_companion_app/widgets/location_header.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -13,13 +13,13 @@ class HomeScreen extends StatelessWidget {
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.menu),
-          onPressed: () {debugPrint('Menu button pressed');},
+          onPressed: () {
+            debugPrint('Menu button pressed');
+          },
         ),
         actions: const [
           CircleAvatar(
             radius: 20,
-            // backgroundColor: Colors.grey[300],
-            // child: const Icon(Icons.person),
             backgroundImage: AssetImage('assets/images/person.png'),
           ),
           SizedBox(width: 16),
@@ -28,12 +28,14 @@ class HomeScreen extends StatelessWidget {
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
       ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: SingleChildScrollView(
+          scrollDirection: Axis.vertical,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              const SizedBox(height: 16),
               const LocationHeader(
                 location: 'Patan, Kathmandu',
               ),
@@ -62,7 +64,6 @@ class HomeScreen extends StatelessWidget {
           ),
         ),
       ),
-      bottomNavigationBar: const CustomBottomNavigation(),
     );
   }
 }
