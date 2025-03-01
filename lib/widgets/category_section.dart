@@ -2,8 +2,61 @@ import 'package:flutter/material.dart';
 import 'package:travel_companion_app/widgets/category_item.dart';
 import 'package:travel_companion_app/widgets/stupa_card.dart';
 
-class CategorySection extends StatelessWidget {
+class CategorySection extends StatefulWidget {
   const CategorySection({super.key});
+
+  @override
+  State<CategorySection> createState() => _CategorySectionState();
+}
+
+class _CategorySectionState extends State<CategorySection> {
+  String _selectedCategory = 'Stupas'; // Default selected category
+
+  // Data for different categories
+  final Map<String, List<Map<String, String>>> _categoryData = {
+    'Temples': [
+      {
+        'name': 'Pashupatinath Temple',
+        'location': 'Gaushala, Ktm',
+        'imageUrl': 'assets/images/pashupatinath.png',
+      },
+      {
+        'name': 'Krishna Temple',
+        'location': 'Patan, Ktm',
+        'imageUrl': 'assets/images/krishnamandir.jpg',
+      },
+    ],
+    'Stupas': [
+      {
+        'name': 'Boudhanath Stupa',
+        'location': 'Boudha, Ktm',
+        'imageUrl': 'assets/images/boudhanath.png',
+      },
+      {
+        'name': 'Swoyambhu',
+        'location': 'Boudha, Ktm',
+        'imageUrl': 'assets/images/Swaymbu.jpeg',
+      },
+    ],
+    'Monuments': [
+      {
+        'name': 'Dharahara',
+        'location': 'Sundhara, Ktm',
+        'imageUrl': 'assets/images/dharahara.png',
+      },
+      {
+        'name': 'Basantapur',
+        'location': 'Kathmandu, Ktm',
+        'imageUrl': 'assets/images/basantapur.png',
+      },
+    ],
+  };
+
+  void _onCategorySelected(String category) {
+    setState(() {
+      _selectedCategory = category;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -33,21 +86,21 @@ class CategorySection extends StatelessWidget {
             children: [
               CategoryItem(
                 icon: Icons.temple_buddhist,
-                label: 'Temple',
-                isSelected: false,
-                onTap: () {},
+                label: 'Temples',
+                isSelected: _selectedCategory == 'Temples',
+                onTap: () => _onCategorySelected('Temples'),
               ),
               CategoryItem(
                 icon: Icons.architecture,
-                label: 'Stupa',
-                isSelected: true,
-                onTap: () {},
+                label: 'Stupas',
+                isSelected: _selectedCategory == 'Stupas',
+                onTap: () => _onCategorySelected('Stupas'),
               ),
               CategoryItem(
-                icon: Icons.water,
-                label: 'River',
-                isSelected: false,
-                onTap: () {},
+                icon: Icons.attractions_sharp,
+                label: 'Monuments',
+                isSelected: _selectedCategory == 'Monuments',
+                onTap: () => _onCategorySelected('Monuments'),
               ),
             ],
           ),
@@ -56,19 +109,18 @@ class CategorySection extends StatelessWidget {
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           child: Row(
-            children: const [
-              StupaCard(
-                name: 'Boudhanath Stupa',
-                location: 'Boudha, Ktm',
-                imageUrl: 'assets/images/boudhanath.png',
-              ),
-              SizedBox(width: 16),
-              StupaCard(
-                name: 'Swoyambhu',
-                location: 'Boudha, Ktm',
-                imageUrl: 'assets/images/Swaymbu.jpeg',
-              ),
-            ],
+            children: _categoryData[_selectedCategory]!.map((item) {
+              return Row(
+                children: [
+                  StupaCard(
+                    name: item['name']!,
+                    location: item['location']!,
+                    imageUrl: item['imageUrl']!,
+                  ),
+                  const SizedBox(width: 16),
+                ],
+              );
+            }).toList(),
           ),
         ),
       ],
