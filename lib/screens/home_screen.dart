@@ -3,6 +3,7 @@ import 'package:flutter/rendering.dart';
 import 'package:travel_companion_app/widgets/category_section.dart';
 import 'package:travel_companion_app/widgets/destination_card.dart';
 import 'package:travel_companion_app/widgets/location_header.dart';
+import 'package:travel_companion_app/widgets/custom_drawer.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -10,12 +11,13 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      drawer: const CustomDrawer(),
       appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.menu),
-          onPressed: () {
-            debugPrint('Menu button pressed');
-          },
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: const Icon(Icons.menu),
+            onPressed: () => Scaffold.of(context).openDrawer(),
+          ),
         ),
         actions: const [
           CircleAvatar(
