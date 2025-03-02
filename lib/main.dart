@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:travel_companion_app/screens/ar_camera_screen.dart';
 import 'package:travel_companion_app/screens/bookmarks_screen.dart';
-import 'package:travel_companion_app/screens/camera_screen.dart';
 import 'package:travel_companion_app/screens/home_screen.dart';
 import 'package:travel_companion_app/screens/location_screen.dart';
 import 'package:travel_companion_app/screens/profile_screen.dart';
 import 'package:travel_companion_app/widgets/bottom_navigation_bar.dart';
 
 void main() {
+  // Ensure AR plugin is initialized
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(const TravelApp());
 }
 
@@ -23,7 +25,7 @@ class _TravelAppState extends State<TravelApp> {
   final List<Widget> _screens = [
     const HomeScreen(),
     const BookmarksScreen(),
-    const CameraScreen(),
+    const ARCameraScreen(), // Replace CameraScreen with ARCameraScreen
     const LocationScreen(),
     const ProfileScreen(),
   ];
@@ -38,7 +40,7 @@ class _TravelAppState extends State<TravelApp> {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Travel App',
+      title: 'AR Travel App',
       theme: ThemeData(
         primarySwatch: Colors.brown,
         scaffoldBackgroundColor: Colors.white,

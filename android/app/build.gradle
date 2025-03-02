@@ -23,6 +23,15 @@ if (flutterVersionName == null) {
     flutterVersionName = "1.0"
 }
 
+// Add this configuration to enforce Kotlin version for all subprojects
+configurations.all {
+    resolutionStrategy.eachDependency { DependencyResolveDetails details ->
+        if (details.requested.group == 'org.jetbrains.kotlin') {
+            details.useVersion '1.5.20'
+        }
+    }
+}
+
 android {
     namespace = "com.example.travel_companion_app"
     compileSdk = flutter.compileSdkVersion
@@ -31,6 +40,10 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
+    }
+
+    kotlinOptions {
+        jvmTarget = '1.8'
     }
 
     defaultConfig {

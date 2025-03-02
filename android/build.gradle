@@ -1,18 +1,30 @@
+buildscript {
+    // Specify your Kotlin version here
+    ext.kotlin_version = '1.6.10'
+    
+    repositories {
+        google()
+        mavenCentral()
+    }
+
+    dependencies {
+        // Your existing dependencies
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+    }
+}
+
 allprojects {
     repositories {
         google()
         mavenCentral()
     }
-}
-
-rootProject.buildDir = "../build"
-subprojects {
-    project.buildDir = "${rootProject.buildDir}/${project.name}"
-}
-subprojects {
-    project.evaluationDependsOn(":app")
-}
-
-tasks.register("clean", Delete) {
-    delete rootProject.buildDir
+    
+    // Force Kotlin version across all subprojects
+    configurations.all {
+        resolutionStrategy.eachDependency { DependencyResolveDetails details ->
+            if (details.requested.group == 'org.jetbrains.kotlin') {
+                details.useVersion '1.5.20'
+            }
+        }
+    }
 }

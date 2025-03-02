@@ -45,5 +45,9 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>This app needs camera access for Augmented Reality features</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>This app needs location access for place recognition</string>
 </dict>
 </plist>
