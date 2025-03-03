@@ -45,5 +45,13 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+
+	<!-- Location usage descriptions -->
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>This app needs access to location when open to track your position during travel.</string>
+
+	<!-- Motion usage for compass/orientation -->
+	<key>NSMotionUsageDescription</key>
+	<string>This app needs access to motion and orientation sensors to determine your heading direction.</string>
 </dict>
 </plist>
