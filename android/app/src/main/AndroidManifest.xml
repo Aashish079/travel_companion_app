@@ -10,9 +10,6 @@
     <uses-feature android:name="android.hardware.sensor.accelerometer" android:required="true" />
     <uses-feature android:name="android.hardware.sensor.compass" android:required="true" />
 
-    <!-- Internet permission for API calls -->
-    <uses-permission android:name="android.permission.INTERNET" />
-    
     <application
         android:label="travel_companion_app"
         android:name="${applicationName}"
