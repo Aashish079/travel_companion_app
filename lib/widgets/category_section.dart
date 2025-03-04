@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:travel_companion_app/widgets/category_item.dart';
 import 'package:travel_companion_app/widgets/stupa_card.dart';
+import 'package:travel_companion_app/screens/all_monuments_screen.dart';
 
 class CategorySection extends StatefulWidget {
   const CategorySection({super.key});
@@ -74,7 +75,17 @@ class _CategorySectionState extends State<CategorySection> {
               ),
             ),
             TextButton(
-              onPressed: () {},
+              onPressed: () {
+                // Navigate to all monuments with the selected category
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => AllMonumentsScreen(
+                      title: 'All ',
+                    ),
+                  ),
+                );
+              },
               child: const Text('View all'),
             ),
           ],
