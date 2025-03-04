@@ -1,8 +1,12 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:web_socket/web_socket.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
+
+import 'package:travel_companion_app/models/detected_object.dart';
+import 'package:travel_companion_app/services/object_detection_service.dart';
 
 class CameraScreen extends StatefulWidget {
   const CameraScreen({super.key});
@@ -12,19 +16,35 @@ class CameraScreen extends StatefulWidget {
 }
 
 class _CameraScreenState extends State<CameraScreen> {
+  // Camera
   CameraController? _controller;
   Future<void>? _initializeControllerFuture;
+  int _frameCount = 0;
+
+  // WebSocket
   WebSocket? _webSocket;
   final List<Map<String, dynamic>> _messages = [];
   final TextEditingController _messageController = TextEditingController();
   bool _showChat = false;
   bool _isProcessing = false;
 
+  // Object Detection
+  final ObjectDetectionService _objectDetectionService =
+      ObjectDetectionService();
+  List<DetectedObject> _detectedObjects = [];
+  bool _isDetectionEnabled = true;
+  bool _showDetectionOptions = false;
+
   @override
   void initState() {
     super.initState();
     _initializeCamera();
     _connectWebSocket();
+    _initializeObjectDetection();
+  }
+
+  Future<void> _initializeObjectDetection() async {
+    await _objectDetectionService.initialize();
   }
 
   Future<void> _initializeCamera() async {
@@ -34,10 +54,38 @@ class _CameraScreenState extends State<CameraScreen> {
     _controller = CameraController(
       firstCamera,
       ResolutionPreset.high,
+      enableAudio: false,
+      imageFormatGroup: Platform.isAndroid
+          ? ImageFormatGroup.nv21
+          : ImageFormatGroup.bgra8888,
     );
 
     _initializeControllerFuture = _controller?.initialize();
+
+    // Start image stream once camera is initialized
+    await _initializeControllerFuture;
+
+    if (_controller != null && _controller!.value.isInitialized) {
+      _controller!.startImageStream(_processImageStream);
+    }
+
     if (mounted) setState(() {});
+  }
+
+  void _processImageStream(CameraImage image) async {
+    // Only process every 10 frames to improve performance
+    _frameCount++;
+    if (_frameCount % 10 != 0 || !_isDetectionEnabled) return;
+
+    // Process the image with ML Kit
+    final objects = await _objectDetectionService.processImage(
+        image, _controller!.description, _frameCount);
+
+    if (mounted) {
+      setState(() {
+        _detectedObjects = objects;
+      });
+    }
   }
 
   static String get baseUrl =>
@@ -193,37 +241,185 @@ class _CameraScreenState extends State<CameraScreen> {
     );
   }
 
+  // Object detection overlay
+  Widget _buildDetectionOverlay() {
+    return Stack(
+      children: [
+        // Bounding boxes for detected objects
+        ..._detectedObjects.map((object) {
+          return Positioned(
+            left: object.boundingBox.left,
+            top: object.boundingBox.top,
+            width: object.boundingBox.width,
+            height: object.boundingBox.height,
+            child: Container(
+              decoration: BoxDecoration(
+                border: Border.all(
+                  color: object.color,
+                  width: 2,
+                ),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: object.color.withOpacity(0.7),
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(4),
+                        bottomRight: Radius.circular(4),
+                      ),
+                    ),
+                    child: Text(
+                      '${object.label} ${object.confidence}%',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }).toList(),
+      ],
+    );
+  }
+
+  // Build control panel for object detection
+  Widget _buildDetectionControls() {
+    return _showDetectionOptions
+        ? Positioned(
+            top: 20,
+            right: 20,
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.7),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Row(
+                    children: [
+                      const Text(
+                        'Object Detection',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Switch(
+                        value: _isDetectionEnabled,
+                        onChanged: (value) {
+                          setState(() {
+                            _isDetectionEnabled = value;
+                            if (!value) {
+                              _detectedObjects = [];
+                            }
+                          });
+                        },
+                        activeColor: const Color.fromARGB(255, 148, 20, 1),
+                      ),
+                    ],
+                  ),
+                  Text(
+                    'Detected objects: ${_detectedObjects.length}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          )
+        : Positioned(
+            top: 20,
+            right: 20,
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.5),
+                shape: BoxShape.circle,
+              ),
+              child: IconButton(
+                icon: const Icon(
+                  Icons.settings,
+                  color: Colors.white,
+                ),
+                onPressed: () {
+                  setState(() {
+                    _showDetectionOptions = true;
+                  });
+                },
+              ),
+            ),
+          );
+  }
+
   @override
   void dispose() {
     _webSocket?.close();
     _controller?.dispose();
     _messageController.dispose();
+    _objectDetectionService.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // body: Text('Camera Screen'),
       body: FutureBuilder<void>(
         future: _initializeControllerFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.done) {
             return Stack(
+              fit: StackFit.expand,
               children: [
+                // Camera preview
                 CameraPreview(_controller!),
+
+                // Object detection overlay
+                if (_isDetectionEnabled) _buildDetectionOverlay(),
+
+                // Detection controls
+                _buildDetectionControls(),
+
+                // Location text
                 Positioned(
                   bottom: 20,
                   left: 20,
-                  child: Text(
-                    'Mitra Marg',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      backgroundColor: Colors.black.withOpacity(0.5),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.5),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: const Text(
+                      'Mitra Marg',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                      ),
                     ),
                   ),
                 ),
+
+                // Chat panel if active
                 if (_showChat) _buildChatPanel(),
               ],
             );
@@ -232,14 +428,40 @@ class _CameraScreenState extends State<CameraScreen> {
           }
         },
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => setState(() => _showChat = !_showChat),
-        backgroundColor: const Color.fromARGB(255, 148, 20, 1),
-        child: Icon(
-          _showChat ? Icons.close : Icons.chat,
-          color: const Color.fromARGB(
-              255, 251, 252, 252), // Change to your desired color
-        ),
+      floatingActionButton: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          // Object detection toggle
+          FloatingActionButton(
+            heroTag: 'detection',
+            onPressed: () {
+              setState(() {
+                _isDetectionEnabled = !_isDetectionEnabled;
+                if (!_isDetectionEnabled) {
+                  _detectedObjects = [];
+                }
+              });
+            },
+            backgroundColor: _isDetectionEnabled
+                ? const Color.fromARGB(255, 148, 20, 1)
+                : Colors.grey,
+            child: Icon(
+              _isDetectionEnabled ? Icons.visibility : Icons.visibility_off,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(width: 16),
+          // Chat toggle
+          FloatingActionButton(
+            heroTag: 'chat',
+            onPressed: () => setState(() => _showChat = !_showChat),
+            backgroundColor: const Color.fromARGB(255, 148, 20, 1),
+            child: Icon(
+              _showChat ? Icons.close : Icons.chat,
+              color: Colors.white,
+            ),
+          ),
+        ],
       ),
     );
   }
