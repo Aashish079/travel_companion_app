@@ -48,7 +48,7 @@ class HomeScreen extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   const Text(
-                    'Best Destination',
+                    'Visited Destination',
                     style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
