@@ -45,7 +45,10 @@ class _RecommendationScreenState extends State<RecommendationScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Recommended Places'),
+        title: const Text('Recommended Places',
+            style: TextStyle(
+              fontWeight: FontWeight.bold, // Make text bold
+            )),
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
         elevation: 0,

@@ -36,12 +36,13 @@ class RecommendationCard extends StatelessWidget {
                   const BorderRadius.vertical(top: Radius.circular(16)),
               child: Stack(
                 children: [
-                  Image.asset(
-                    monument.imagePath,
+                  Image.network(
+                    monument.fullImageUrl,
                     height: 200,
                     width: double.infinity,
                     fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) {
+                      print('Error loading image: $error');
                       return Container(
                         height: 200,
                         width: double.infinity,
@@ -62,7 +63,32 @@ class RecommendationCard extends StatelessWidget {
                                 fontSize: 14,
                               ),
                             ),
+                            const SizedBox(height: 4),
+                            Text(
+                              monument.fullImageUrl,
+                              style: TextStyle(
+                                color: Colors.grey[500],
+                                fontSize: 10,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
                           ],
+                        ),
+                      );
+                    },
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return Container(
+                        height: 200,
+                        width: double.infinity,
+                        color: Colors.grey[200],
+                        child: Center(
+                          child: CircularProgressIndicator(
+                            value: loadingProgress.expectedTotalBytes != null
+                                ? loadingProgress.cumulativeBytesLoaded /
+                                    (loadingProgress.expectedTotalBytes ?? 1)
+                                : null,
+                          ),
                         ),
                       );
                     },
@@ -90,28 +116,6 @@ class RecommendationCard extends StatelessWidget {
                       ),
                     ),
                   ),
-                  Positioned(
-                    top: 12,
-                    left: 12,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Color(monument.categoryColor).withOpacity(0.8),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        monument.category,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ),
-                  ),
                 ],
               ),
             ),
@@ -136,34 +140,6 @@ class RecommendationCard extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.amber.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.star,
-                              size: 16,
-                              color: Colors.amber[600],
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              monument.matchPercentage,
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
-                                color: Colors.amber[800],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
                     ],
                   ),
                   const SizedBox(height: 8),
@@ -177,7 +153,7 @@ class RecommendationCard extends StatelessWidget {
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
-                          'Kathmandu, Nepal',
+                          monument.location,
                           style: TextStyle(
                             color: Colors.grey[600],
                             fontSize: 14,
@@ -187,6 +163,16 @@ class RecommendationCard extends StatelessWidget {
                         ),
                       ),
                     ],
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    monument.description,
+                    style: TextStyle(
+                      color: Colors.grey[700],
+                      fontSize: 13,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),

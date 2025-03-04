@@ -1,42 +1,79 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+
 class Monument {
+  final int id;
   final String name;
-  final double score;
-  final String imagePath;
+  final double latitude;
+  final double longitude;
+  final String type;
+  final double popularity;
+  final bool indoor;
+  final String description;
+  final String imageUrl;
+  final String location;
 
-  Monument({
-    required this.name,
-    required this.score,
-    required this.imagePath,
-  });
+  Monument(
+      {required this.id,
+      required this.name,
+      required this.latitude,
+      required this.longitude,
+      required this.type,
+      required this.popularity,
+      required this.indoor,
+      required this.description,
+      required this.imageUrl,
+      required this.location});
 
-  factory Monument.fromJson(String name, dynamic score) {
-    final double scoreValue =
-        score is double ? score : double.parse(score.toString());
-    final String formattedName = name.replaceAll(' ', '_');
+  factory Monument.fromJson(Map<String, dynamic> json) {
     return Monument(
-      name: name,
-      score: scoreValue,
-      imagePath: 'assets/$formattedName.jpg',
-    );
+        id: json['id'] ?? 0,
+        name: json['name'] ?? '',
+        latitude: (json['latitude'] ?? 0.0).toDouble(),
+        longitude: (json['longitude'] ?? 0.0).toDouble(),
+        type: json['type'] ?? '',
+        popularity: (json['popularity'] ?? 0.0).toDouble(),
+        indoor: json['indoor'] ?? false,
+        description: json['description'] ?? '',
+        imageUrl: json['image_url'] ?? '/assets/placeholder.jpg',
+        location: json['location'] ?? '');
   }
 
-  String get matchPercentage => '${(score * 100).toStringAsFixed(0)}%';
+  // Helper method to get popularity as percentage string
+  String get popularityPercentage => '${(popularity * 100).toInt()}%';
 
-  // Categorize recommendations based on score
-  String get category {
-    if (score >= 0.7) return 'Excellent Match';
-    if (score >= 0.6) return 'Great Match';
-    if (score >= 0.5) return 'Good Match';
-    if (score >= 0.4) return 'Fair Match';
-    return 'Potential Match';
+  // Helper method to get color based on monument type
+  Color get typeColor {
+    switch (type) {
+      case 'Hindu Temple':
+        return Colors.orange;
+      case 'Buddhist Temple':
+      case 'Buddhist Stupa':
+        return Colors.amber;
+      case 'Historical Monument':
+      case 'Historical Site':
+        return Colors.blue;
+      case 'Museum':
+        return Colors.purple;
+      case 'Garden':
+      case 'Park':
+        return Colors.green;
+      case 'Palace':
+        return Colors.red;
+      case 'Cave':
+        return Colors.brown;
+      default:
+        return Colors.teal;
+    }
   }
 
-  // Get category color
-  int get categoryColor {
-    if (score >= 0.7) return 0xFF4CAF50; // Green
-    if (score >= 0.6) return 0xFF8BC34A; // Light Green
-    if (score >= 0.5) return 0xFFFFC107; // Amber
-    if (score >= 0.4) return 0xFFFF9800; // Orange
-    return 0xFF9E9E9E; // Grey
+  // Get the full image URL including the base URL
+  String get fullImageUrl {
+    final baseUrl = dotenv.env['API_BASE_URL'] ?? 'http://192.168.1.24:8000';
+    if (imageUrl.startsWith('http')) {
+      return imageUrl;
+    } else {
+      return '$baseUrl$imageUrl';
+    }
   }
 }
