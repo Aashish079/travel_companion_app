@@ -2,11 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:travel_companion_app/screens/bookmarks_screen.dart';
 import 'package:travel_companion_app/screens/camera_screen.dart';
 import 'package:travel_companion_app/screens/home_screen.dart';
-import 'package:travel_companion_app/screens/location_screen.dart';
+// import 'package:travel_companion_app/screens/location_screen.dart';
 import 'package:travel_companion_app/screens/profile_screen.dart';
+import 'package:travel_companion_app/screens/recommendation_screen.dart';
 import 'package:travel_companion_app/widgets/bottom_navigation_bar.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-void main() {
+void main() async {
+  // Ensure Flutter is initialized
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Load environment variables
+  await dotenv.load(fileName: '.env');
   runApp(const TravelApp());
 }
 
@@ -24,7 +31,7 @@ class _TravelAppState extends State<TravelApp> {
     const HomeScreen(),
     const BookmarksScreen(),
     const CameraScreen(),
-    const LocationScreen(),
+    const RecommendationScreen(),
     const ProfileScreen(),
   ];
 
