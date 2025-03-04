@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:web_socket/web_socket.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 
@@ -39,10 +40,12 @@ class _CameraScreenState extends State<CameraScreen> {
     if (mounted) setState(() {});
   }
 
+  static String get baseUrl =>
+      dotenv.env['CHAT_BASE_URL'] ?? 'ws://192.168.1.24:8000';
   Future<void> _connectWebSocket() async {
     try {
       _webSocket = await WebSocket.connect(
-        Uri.parse('ws://192.168.1.66:8000/chat'),
+        Uri.parse('$baseUrl/chat'),
       );
 
       _webSocket?.events.listen(
@@ -115,7 +118,9 @@ class _CameraScreenState extends State<CameraScreen> {
           data: message['text'],
           styleSheet: MarkdownStyleSheet(
             p: TextStyle(
-              color: message['isUser'] ? Colors.blue[800] : Colors.black,
+              color: message['isUser']
+                  ? const Color.fromARGB(255, 38, 157, 147)
+                  : Colors.black,
             ),
           ),
         ),
@@ -177,7 +182,7 @@ class _CameraScreenState extends State<CameraScreen> {
                   IconButton(
                     icon: const Icon(Icons.send),
                     onPressed: _sendMessage,
-                    color: Colors.blue,
+                    color: const Color.fromARGB(255, 148, 20, 1),
                   ),
                 ],
               ),
@@ -229,8 +234,12 @@ class _CameraScreenState extends State<CameraScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => setState(() => _showChat = !_showChat),
-        backgroundColor: Colors.blue,
-        child: Icon(_showChat ? Icons.close : Icons.chat),
+        backgroundColor: const Color.fromARGB(255, 148, 20, 1),
+        child: Icon(
+          _showChat ? Icons.close : Icons.chat,
+          color: const Color.fromARGB(
+              255, 251, 252, 252), // Change to your desired color
+        ),
       ),
     );
   }

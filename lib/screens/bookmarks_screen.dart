@@ -8,8 +8,14 @@ class BookmarksScreen extends StatelessWidget {
     return Column(
       children: [
         AppBar(
-          title: const Text('Bookmarks'),
-          backgroundColor: Colors.brown,
+          title: const Text(
+            'Bookmarks',
+            style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Color.fromARGB(255, 255, 255, 255) // Make text bold
+                ),
+          ),
+          backgroundColor: const Color.fromARGB(255, 148, 20, 1),
         ),
         const Expanded(
           child: Center(

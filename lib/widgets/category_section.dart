@@ -86,7 +86,13 @@ class _CategorySectionState extends State<CategorySection> {
                   ),
                 );
               },
-              child: const Text('View all'),
+              child: const Text(
+                'View all',
+                style: TextStyle(
+                  color: Color.fromARGB(
+                      255, 148, 20, 1), // Change to any color you want
+                ),
+              ),
             ),
           ],
         ),

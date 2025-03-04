@@ -38,7 +38,7 @@ class CustomBottomNavigation extends StatelessWidget {
           label: 'Profile',
         ),
       ],
-      selectedItemColor: Colors.brown,
+      selectedItemColor: const Color.fromARGB(255, 148, 20, 1),
       unselectedItemColor: Colors.grey,
     );
   }

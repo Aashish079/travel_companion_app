@@ -1,5 +1,5 @@
-
 import 'package:flutter/material.dart';
+
 class CategoryItem extends StatelessWidget {
   final IconData icon;
   final String label;
@@ -22,17 +22,24 @@ class CategoryItem extends StatelessWidget {
         margin: const EdgeInsets.only(right: 16),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? Colors.brown.shade200 : Colors.grey.shade100,
+          color: isSelected
+              ? const Color.fromARGB(64, 148, 20, 1)
+              : Colors.grey.shade100,
           borderRadius: BorderRadius.circular(20),
         ),
         child: Row(
           children: [
-            Icon(icon, color: isSelected ? Colors.brown : Colors.grey),
+            Icon(icon,
+                color: isSelected
+                    ? const Color.fromARGB(255, 148, 20, 1)
+                    : Colors.grey),
             const SizedBox(width: 8),
             Text(
               label,
               style: TextStyle(
-                color: isSelected ? Colors.brown : Colors.grey,
+                color: isSelected
+                    ? const Color.fromARGB(255, 148, 20, 1)
+                    : Colors.grey,
                 fontWeight: FontWeight.w500,
               ),
             ),

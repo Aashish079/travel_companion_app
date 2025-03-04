@@ -49,8 +49,8 @@ class _RecommendationScreenState extends State<RecommendationScreen> {
             style: TextStyle(
               fontWeight: FontWeight.bold, // Make text bold
             )),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
+        backgroundColor: const Color.fromARGB(255, 148, 20, 1),
+        foregroundColor: const Color.fromARGB(255, 255, 255, 255),
         elevation: 0,
       ),
       body: Column(
