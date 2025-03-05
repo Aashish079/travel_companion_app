@@ -3,6 +3,8 @@ import 'package:camera/camera.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:web_socket/web_socket.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:travel_companion_app/services/monument_detection_service.dart';
+import 'package:travel_companion_app/widgets/detection_overlay_painter.dart';
 
 class CameraScreen extends StatefulWidget {
   const CameraScreen({super.key});
@@ -19,6 +21,9 @@ class _CameraScreenState extends State<CameraScreen> {
   final TextEditingController _messageController = TextEditingController();
   bool _showChat = false;
   bool _isProcessing = false;
+  bool _isDetecting = false;
+  List<Detection> _detections = [];
+  Size? _imageSize;
 
   @override
   void initState() {
@@ -101,6 +106,77 @@ class _CameraScreenState extends State<CameraScreen> {
     });
 
     _webSocket?.sendText(message);
+  }
+
+  Future<void> _detectMonuments() async {
+    if (_isDetecting ||
+        _controller == null ||
+        !_controller!.value.isInitialized) {
+      return;
+    }
+
+    setState(() {
+      _isDetecting = true;
+      _detections = [];
+    });
+
+    try {
+      // Capture image
+      final XFile image = await _controller!.takePicture();
+      final imageBytes = await image.readAsBytes();
+
+      // Get image dimensions
+      final imageInfo = await decodeImageFromList(imageBytes);
+      _imageSize =
+          Size(imageInfo.width.toDouble(), imageInfo.height.toDouble());
+
+      // Send to API for detection
+      final detectionResponse =
+          await MonumentDetectionService.detectMonument(imageBytes);
+
+      // Update UI with results
+      setState(() {
+        _detections = detectionResponse.detections;
+        _isDetecting = false;
+      });
+
+      // Add detection results to chat
+      if (_detections.isNotEmpty) {
+        final detectionSummary = _detections
+            .map((d) =>
+                '- ${d.landmark.split('_').map((word) => word[0].toUpperCase() + word.substring(1)).join(' ')} (${(d.confidence * 100).toInt()}%)')
+            .join('\n');
+
+        setState(() {
+          _messages.add({
+            'text': "I detected the following monuments:\n$detectionSummary",
+            'isUser': false,
+            'isComplete': true,
+          });
+          _showChat = true;
+        });
+      } else {
+        setState(() {
+          _messages.add({
+            'text': "No monuments detected in this image.",
+            'isUser': false,
+            'isComplete': true,
+          });
+          _showChat = true;
+        });
+      }
+    } catch (e) {
+      print('Error during detection: $e');
+      setState(() {
+        _isDetecting = false;
+        _messages.add({
+          'text': "Error during detection: $e",
+          'isUser': false,
+          'isComplete': true,
+        });
+        _showChat = true;
+      });
+    }
   }
 
   Widget _buildChatMessage(Map<String, dynamic> message) {
@@ -203,15 +279,30 @@ class _CameraScreenState extends State<CameraScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final Size screenSize = MediaQuery.of(context).size;
+
     return Scaffold(
-      // body: Text('Camera Screen'),
       body: FutureBuilder<void>(
         future: _initializeControllerFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.done) {
             return Stack(
               children: [
+                // Camera preview
                 CameraPreview(_controller!),
+
+                // Detection overlays
+                if (_detections.isNotEmpty && _imageSize != null)
+                  CustomPaint(
+                    size: screenSize,
+                    painter: DetectionOverlayPainter(
+                      detections: _detections,
+                      imageSize: _imageSize!,
+                      screenSize: screenSize,
+                    ),
+                  ),
+
+                // Location indicator
                 Positioned(
                   bottom: 20,
                   left: 20,
@@ -224,7 +315,48 @@ class _CameraScreenState extends State<CameraScreen> {
                     ),
                   ),
                 ),
+
+                // Loading indicator for detection
+                if (_isDetecting)
+                  Container(
+                    color: Colors.black.withOpacity(0.3),
+                    child: const Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          CircularProgressIndicator(
+                            color: Colors.white,
+                          ),
+                          SizedBox(height: 16),
+                          Text(
+                            'Detecting monuments...',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                // Chat panel
                 if (_showChat) _buildChatPanel(),
+
+                // Detection button
+                Positioned(
+                  bottom: 20,
+                  right: 80,
+                  child: FloatingActionButton(
+                    onPressed: _detectMonuments,
+                    backgroundColor: const Color.fromARGB(255, 148, 20, 1),
+                    child: const Icon(
+                      Icons.camera,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
               ],
             );
           } else {
@@ -237,8 +369,7 @@ class _CameraScreenState extends State<CameraScreen> {
         backgroundColor: const Color.fromARGB(255, 148, 20, 1),
         child: Icon(
           _showChat ? Icons.close : Icons.chat,
-          color: const Color.fromARGB(
-              255, 251, 252, 252), // Change to your desired color
+          color: const Color.fromARGB(255, 251, 252, 252),
         ),
       ),
     );
