@@ -22,8 +22,10 @@ class _CameraScreenState extends State<CameraScreen> {
   bool _showChat = false;
   bool _isProcessing = false;
   bool _isDetecting = false;
+  bool _continuousDetectionEnabled = false;
   List<Detection> _detections = [];
   Size? _imageSize;
+  bool _processingFrame = false;
 
   @override
   void initState() {
@@ -108,6 +110,108 @@ class _CameraScreenState extends State<CameraScreen> {
     _webSocket?.sendText(message);
   }
 
+  void _toggleContinuousDetection() {
+    setState(() {
+      _continuousDetectionEnabled = !_continuousDetectionEnabled;
+
+      if (_continuousDetectionEnabled) {
+        // Start continuous detection
+        _startContinuousDetection();
+      } else {
+        // Clear current detections when turned off
+        _detections = [];
+      }
+    });
+  }
+
+  Future<void> _startContinuousDetection() async {
+    if (!_continuousDetectionEnabled ||
+        _controller == null ||
+        !_controller!.value.isInitialized) {
+      return;
+    }
+
+    // Process a single frame if not already processing
+    if (!_processingFrame) {
+      await _processFrame();
+    }
+
+    // Schedule next frame capture if continuous detection is still enabled
+    if (_continuousDetectionEnabled) {
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (mounted && _continuousDetectionEnabled) {
+          _startContinuousDetection();
+        }
+      });
+    }
+  }
+
+  Future<void> _processFrame() async {
+    if (_processingFrame ||
+        _controller == null ||
+        !_controller!.value.isInitialized) {
+      return;
+    }
+
+    _processingFrame = true;
+    try {
+      // Capture image
+      final XFile image = await _controller!.takePicture();
+      final imageBytes = await image.readAsBytes();
+
+      // Get image dimensions (only if we don't have them yet)
+      if (_imageSize == null) {
+        final imageInfo = await decodeImageFromList(imageBytes);
+        _imageSize =
+            Size(imageInfo.width.toDouble(), imageInfo.height.toDouble());
+      }
+
+      // Send to API for detection
+      final detectionResponse =
+          await MonumentDetectionService.detectMonument(imageBytes);
+
+      // Update UI with results if still in continuous mode
+      if (_continuousDetectionEnabled && mounted) {
+        setState(() {
+          _detections = detectionResponse.detections;
+        });
+
+        // Add to chat messages without showing chat
+        if (_detections.isNotEmpty) {
+          final detectionSummary = _detections
+              .map((d) =>
+                  '- ${d.landmark.split('_').map((word) => word[0].toUpperCase() + word.substring(1)).join(' ')} (${(d.confidence * 100).toInt()}%)')
+              .join('\n');
+
+          if (mounted) {
+            setState(() {
+              // Replace the last message if it exists, otherwise add new
+              if (_messages.isNotEmpty && !_messages.last['isUser']) {
+                _messages.last = {
+                  'text': "Latest detection:\n$detectionSummary",
+                  'isUser': false,
+                  'isComplete': true,
+                };
+              } else {
+                _messages.add({
+                  'text': "Latest detection:\n$detectionSummary",
+                  'isUser': false,
+                  'isComplete': true,
+                });
+              }
+            });
+          }
+        }
+      }
+    } catch (e) {
+      print('Error during continuous detection: $e');
+      // Don't stop continuous detection on error, just log it
+    } finally {
+      _processingFrame = false;
+    }
+  }
+
+  // Single detection for manual button press
   Future<void> _detectMonuments() async {
     if (_isDetecting ||
         _controller == null ||
@@ -140,7 +244,7 @@ class _CameraScreenState extends State<CameraScreen> {
         _isDetecting = false;
       });
 
-      // Add detection results to chat
+      // Store detection results in messages but don't show chat automatically
       if (_detections.isNotEmpty) {
         final detectionSummary = _detections
             .map((d) =>
@@ -153,7 +257,6 @@ class _CameraScreenState extends State<CameraScreen> {
             'isUser': false,
             'isComplete': true,
           });
-          _showChat = true;
         });
       } else {
         setState(() {
@@ -162,7 +265,6 @@ class _CameraScreenState extends State<CameraScreen> {
             'isUser': false,
             'isComplete': true,
           });
-          _showChat = true;
         });
       }
     } catch (e) {
@@ -174,7 +276,6 @@ class _CameraScreenState extends State<CameraScreen> {
           'isUser': false,
           'isComplete': true,
         });
-        _showChat = true;
       });
     }
   }
@@ -271,6 +372,8 @@ class _CameraScreenState extends State<CameraScreen> {
 
   @override
   void dispose() {
+    // Make sure to turn off continuous detection when leaving the screen
+    _continuousDetectionEnabled = false;
     _webSocket?.close();
     _controller?.dispose();
     _messageController.dispose();
@@ -280,18 +383,25 @@ class _CameraScreenState extends State<CameraScreen> {
   @override
   Widget build(BuildContext context) {
     final Size screenSize = MediaQuery.of(context).size;
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
+
+    // Get the height of the bottom navigation bar
+    const double bottomNavHeight = kBottomNavigationBarHeight;
 
     return Scaffold(
+      // Remove the default body padding/margin that creates the white strip
       body: FutureBuilder<void>(
         future: _initializeControllerFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.done) {
             return Stack(
               children: [
-                // Camera preview
-                CameraPreview(_controller!),
+                // Camera preview - Fills the entire available space
+                SizedBox.expand(
+                  child: CameraPreview(_controller!),
+                ),
 
-                // Detection overlays
+                // Detection overlays with real-time bounding boxes and labels
                 if (_detections.isNotEmpty && _imageSize != null)
                   CustomPaint(
                     size: screenSize,
@@ -302,21 +412,70 @@ class _CameraScreenState extends State<CameraScreen> {
                     ),
                   ),
 
-                // Location indicator
+                // Continuous detection indicator
+                if (_continuousDetectionEnabled)
+                  Positioned(
+                    top: 40,
+                    right: 20,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.7),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 12,
+                            height: 12,
+                            decoration: BoxDecoration(
+                              color: Colors.red,
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.red.withOpacity(0.5),
+                                  blurRadius: 8,
+                                  spreadRadius: 2,
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          const Text(
+                            'LIVE',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                // Location indicator - positioned directly above action buttons
                 Positioned(
                   bottom: 20,
                   left: 20,
-                  child: Text(
-                    'Mitra Marg',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      backgroundColor: Colors.black.withOpacity(0.5),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.5),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: const Text(
+                      'Mitra Marg',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                      ),
                     ),
                   ),
                 ),
 
-                // Loading indicator for detection
+                // Loading indicator for single detection
                 if (_isDetecting)
                   Container(
                     color: Colors.black.withOpacity(0.3),
@@ -341,20 +500,61 @@ class _CameraScreenState extends State<CameraScreen> {
                     ),
                   ),
 
-                // Chat panel
+                // Chat panel (only shown when user explicitly opens it)
                 if (_showChat) _buildChatPanel(),
 
-                // Detection button
+                // Row of action buttons at the bottom - positioned to be above the bottom nav
                 Positioned(
-                  bottom: 20,
-                  right: 80,
-                  child: FloatingActionButton(
-                    onPressed: _detectMonuments,
-                    backgroundColor: const Color.fromARGB(255, 148, 20, 1),
-                    child: const Icon(
-                      Icons.camera,
-                      color: Colors.white,
-                    ),
+                  bottom: 20, // Space above the bottom navigation
+                  right: 20,
+                  left: 20,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      // Continuous detection toggle button
+                      FloatingActionButton.small(
+                        heroTag: "continuousBtn",
+                        onPressed: _toggleContinuousDetection,
+                        backgroundColor: _continuousDetectionEnabled
+                            ? Colors.red
+                            : Colors.black54,
+                        child: Icon(
+                          _continuousDetectionEnabled
+                              ? Icons.videocam
+                              : Icons.videocam_off,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                      ),
+
+                      // Single detection button - centered and prominent
+                      FloatingActionButton(
+                        heroTag: "detectBtn",
+                        onPressed: _continuousDetectionEnabled
+                            ? null
+                            : _detectMonuments,
+                        backgroundColor: _continuousDetectionEnabled
+                            ? Colors.grey
+                            : const Color.fromARGB(255, 148, 20, 1),
+                        child: const Icon(
+                          Icons.camera,
+                          color: Colors.white,
+                          size: 28,
+                        ),
+                      ),
+
+                      // Chat toggle button
+                      FloatingActionButton.small(
+                        heroTag: "chatBtn",
+                        onPressed: () => setState(() => _showChat = !_showChat),
+                        backgroundColor: Colors.black54,
+                        child: Icon(
+                          _showChat ? Icons.close : Icons.chat,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -364,14 +564,10 @@ class _CameraScreenState extends State<CameraScreen> {
           }
         },
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => setState(() => _showChat = !_showChat),
-        backgroundColor: const Color.fromARGB(255, 148, 20, 1),
-        child: Icon(
-          _showChat ? Icons.close : Icons.chat,
-          color: const Color.fromARGB(255, 251, 252, 252),
-        ),
-      ),
+      // Remove any additional padding
+      resizeToAvoidBottomInset: false,
+      extendBody: true,
+      extendBodyBehindAppBar: true,
     );
   }
 }
