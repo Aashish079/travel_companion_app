@@ -1,16 +1,27 @@
-# travel_companion_app
+# Travel Companion App
 
-A new Flutter project.
+This repository contains the source code for a travel companion app designed to recognize and recommend cultural monuments in Kathmandu, Nepal. The app uses camera input to identify monuments and suggests landmarks based on various contextual factors such as location, popularity, seasonal event and time.
 
 ## Getting Started
 
-This project is a starting point for a Flutter application.
+### Requirements
 
-A few resources to get you started if this is your first Flutter project:
+- **Flutter** (for the frontend)
+- **Docker** (for running the database)
+- **FastAPI** (for the backend)
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+### Setup Instructions
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+Before running the Flutter frontend, make sure the following backend services are up and running:
+
+- [Backend Repository 1](https://github.com/tyro-apil/Recognize-Monument)
+- [Backend Repository 2](https://github.com/Aashish079/API_Travel)
+
+### Running the Flutter App
+
+Once the backend services are running, navigate to the project directory and execute the following commands:
+
+```bash
+flutter pub get
+flutter run
+```
